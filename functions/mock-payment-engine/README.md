@@ -1,6 +1,6 @@
 # Mock payment engine
 
-This Azure Functions v4 Node.js app listens to the `payment-requests` Service Bus queue and writes a simulated result to `payment-results`. It does not process real payment credentials or charge cards.
+This Azure Functions v4 Node.js app listens to `payment-requests`, writes a simulated result to `payment-results`, and consumes `payment-results` to finalize the matching SQL order. It does not process real payment credentials or charge cards.
 
 ## Message contract
 
@@ -15,17 +15,25 @@ Send a JSON message like this to `payment-requests`:
 }
 ```
 
-Valid requests are approved by default. Set `"simulateOutcome": "declined"` to test a decline. The transaction reference is stable for a given `paymentRequestId`; the result handler should still deduplicate because Service Bus delivers at least once.
+Valid requests are approved by default. Set `"simulateOutcome": "declined"` to test a decline. The transaction reference is stable for a given `paymentRequestId`. The result handler records each request ID in `dbo.PaymentResults` and updates an order from `PaymentPending` to `Paid` or `PaymentFailed` in the same SQL transaction. Duplicate deliveries are acknowledged without applying the result twice.
 
 ## Azure setup
 
-1. Create a `payment-results` queue in the same Service Bus namespace as `payment-requests`.
+1. Create `payment-requests` and `payment-results` queues in the same Service Bus namespace.
 2. Enable the Function App system-assigned managed identity.
 3. Grant that identity **Azure Service Bus Data Receiver** and **Azure Service Bus Data Sender** on the namespace.
-4. In Function App application settings, set `SERVICE_BUS_CONNECTION__fullyQualifiedNamespace` to `<namespace-name>.servicebus.windows.net`. The queue settings default to `payment-requests` and `payment-results`; override them only if your queue names differ.
-5. Confirm the app is configured for Azure Functions runtime v4 and Node.js 20, then use the GitHub deployment workflow described below.
+4. Run `database/schema.sql` against the target database, then create a contained SQL user for the Function App identity and grant the required table permissions:
 
-The namespace must allow the Function App to reach its network endpoint. If public network access is disabled, configure private networking for the Function App.
+  ```sql
+  CREATE USER [mock-payment-engine] FROM EXTERNAL PROVIDER;
+  GRANT SELECT, INSERT ON dbo.PaymentResults TO [mock-payment-engine];
+  GRANT SELECT, UPDATE ON dbo.ShoppingLists TO [mock-payment-engine];
+  ```
+
+5. In Function App application settings, set `SERVICE_BUS_CONNECTION__fullyQualifiedNamespace` to `<namespace-name>.servicebus.windows.net`, `SQL_SERVER` to `<server-name>.database.windows.net`, and `SQL_DATABASE` to the database name. Queue settings default to `payment-requests` and `payment-results`; override them only if your queue names differ.
+6. Confirm the app is configured for Azure Functions runtime v4 and Node.js 20, then use the GitHub deployment workflow described below.
+
+The namespace and SQL server must allow the Function App to reach their network endpoints. If public network access is disabled, configure private networking for the Function App. The SQL driver uses Azure Default credentials, which resolves the Function App's managed identity in Azure.
 
 ## GitHub deployment
 
@@ -40,7 +48,7 @@ The publish profile is used only by GitHub Actions to deploy code. At runtime, t
 
 ## Local development
 
-Install Node.js 20 and Azure Functions Core Tools v4. Copy `local.settings.sample.json` to `local.settings.json`, configure local storage and a Service Bus connection for development, then run:
+Install Node.js 20 and Azure Functions Core Tools v4. Copy `local.settings.sample.json` to `local.settings.json`, configure local storage and a Service Bus connection for development, sign in locally with Azure CLI to use your developer identity for SQL, then run:
 
 ```powershell
 npm install
@@ -51,4 +59,4 @@ Do not commit `local.settings.json`; it may contain credentials.
 
 ## Scope
 
-This processor only emits a simulated payment result. A separate result handler must validate `payment-results` and update SQL. The collection API should enqueue requests through the SQL outbox pattern; the browser must not connect directly to SQL or Service Bus.
+The collection API should enqueue requests through the SQL outbox pattern; the browser must not connect directly to SQL or Service Bus. Results that do not match an existing `PaymentPending` order fail processing and are retried/dead-lettered by Service Bus rather than silently discarded.

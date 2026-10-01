@@ -136,3 +136,23 @@ CREATE INDEX IX_PaymentOutbox_Ready
     ON dbo.PaymentOutbox (DeliveryStatus, NextAttemptAt, OutboxId)
     INCLUDE (ListId, MessageType, AttemptCount);
 GO
+
+-- A unique payment request ID makes result handling idempotent across Service
+-- Bus redeliveries; the order status update happens in the same transaction.
+CREATE TABLE dbo.PaymentResults (
+    PaymentRequestId NVARCHAR(100) NOT NULL,
+    SourceOrderId NVARCHAR(100) NOT NULL,
+    Status VARCHAR(16) NOT NULL,
+    Amount DECIMAL(12,2) NOT NULL,
+    CurrencyCode CHAR(3) NOT NULL,
+    TransactionReference NVARCHAR(100) NOT NULL,
+    ProcessedAt DATETIMEOFFSET(0) NOT NULL,
+    ReceivedAt DATETIMEOFFSET(0) NOT NULL
+        CONSTRAINT DF_PaymentResults_ReceivedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_PaymentResults PRIMARY KEY (PaymentRequestId),
+    CONSTRAINT FK_PaymentResults_ShoppingLists FOREIGN KEY (SourceOrderId)
+        REFERENCES dbo.ShoppingLists (SourceOrderId),
+    CONSTRAINT CK_PaymentResults_Status CHECK (Status IN ('Approved', 'Declined')),
+    CONSTRAINT CK_PaymentResults_Amount CHECK (Amount >= 0)
+);
+GO
