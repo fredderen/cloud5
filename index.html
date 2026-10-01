@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173e35">
+  <meta name="description" content="Spar employee grocery collection workspace">
+  <link rel="manifest" href="/manifest.json">
+  <title>Spar | Collection desk</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202b27;
+      --muted: #77817c;
+      --line: #e7ebe7;
+      --paper: #ffffff;
+      --canvas: #f4f6f2;
+      --forest: #173e35;
+      --forest-2: #24584b;
+      --lime: #d7f06a;
+      --lime-soft: #f2f8dc;
+      --orange: #c16a33;
+      --orange-soft: #fff2e9;
+      --red: #bd5548;
+      --shadow: 0 14px 40px rgba(31, 52, 43, .07);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); min-height: 100vh; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .topbar { height: 68px; display: flex; align-items: center; gap: 28px; padding: 0 32px; background: var(--forest); color: white; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 215px; font-weight: 750; letter-spacing: .1px; }
+    .brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%; background: var(--lime); color: var(--forest); font-family: Georgia, serif; font-weight: 800; font-size: 20px; }
+    .brand small { display: block; margin-top: 1px; color: #b9c9c1; font-size: 10px; letter-spacing: 1.3px; font-weight: 600; text-transform: uppercase; }
+    .top-context { display: flex; align-items: center; gap: 9px; padding-left: 24px; border-left: 1px solid rgba(255,255,255,.18); color: #e2e9e4; font-size: 13px; }
+    .top-context svg { opacity: .78; }
+    .top-right { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+    .offline-button { border: 0; padding: 7px 10px; display: flex; align-items: center; gap: 8px; color: #e8f0eb; background: rgba(255,255,255,.09); border-radius: 5px; cursor: pointer; font-size: 12px; }
+    .connection-dot { width: 7px; height: 7px; border-radius: 50%; background: #9ed94b; box-shadow: 0 0 0 3px rgba(158,217,75,.14); }
+    .offline-button.is-offline .connection-dot { background: #ffb269; box-shadow: 0 0 0 3px rgba(255,178,105,.16); }
+    .worker { display: flex; gap: 9px; align-items: center; font-size: 12px; color: #e6ece8; }
+    .avatar { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%; background: #d8e5db; color: var(--forest); font-size: 11px; font-weight: 750; }
+    .page { max-width: 1500px; margin: auto; padding: 28px 32px 42px; }
+    .page-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 22px; }
+    .eyebrow { color: var(--forest-2); font-size: 10px; font-weight: 750; letter-spacing: 1.5px; text-transform: uppercase; }
+    h1 { margin: 5px 0 0; font-family: Georgia, "Times New Roman", serif; font-size: 31px; font-weight: 500; letter-spacing: 0; }
+    .shift-note { color: var(--muted); font-size: 12px; }
+    .workspace { min-height: 690px; display: grid; grid-template-columns: 300px minmax(480px, 1fr) 278px; background: var(--paper); border: 1px solid #e9ede9; border-radius: 7px; box-shadow: var(--shadow); overflow: hidden; }
+    .queue { background: #fbfcfa; border-right: 1px solid var(--line); }
+    .queue-head { padding: 20px 18px 13px; }
+    .section-line { display: flex; align-items: center; justify-content: space-between; }
+    .section-title { font-size: 13px; font-weight: 750; }
+    .count { padding: 3px 7px; background: #edf0eb; border-radius: 20px; color: #59655f; font-size: 10px; font-weight: 700; }
+    .queue-summary { margin-top: 5px; color: var(--muted); font-size: 11px; }
+    .queue-filters { display: flex; gap: 6px; margin-top: 15px; }
+    .filter { padding: 6px 9px; border: 1px solid transparent; background: transparent; color: #78817c; border-radius: 4px; font-size: 11px; cursor: pointer; }
+    .filter.active { border-color: #dce4d9; color: var(--forest); background: #f1f5ed; font-weight: 700; }
+    .queue-list { padding: 0 9px 10px; }
+    .order { position: relative; width: 100%; padding: 13px 11px 12px; display: block; text-align: left; border: 1px solid transparent; border-radius: 5px; background: transparent; cursor: pointer; }
+    .order + .order { margin-top: 3px; }
+    .order.selected { border-color: #dce8d9; background: #f2f7ee; }
+    .order-top, .order-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .order-name { font-size: 12px; font-weight: 700; }
+    .order-id, .order-bottom { color: var(--muted); font-size: 10px; }
+    .order-bottom { margin-top: 7px; }
+    .order-progress { width: 100%; height: 3px; margin-top: 10px; border-radius: 4px; background: #e8ece6; overflow: hidden; }
+    .order-progress span { display: block; height: 100%; background: #83a85b; }
+    .priority { color: var(--orange); font-size: 9px; font-weight: 750; text-transform: uppercase; letter-spacing: .5px; }
+    .queue-footer { margin: 13px 18px; padding-top: 14px; border-top: 1px solid var(--line); color: #88918b; font-size: 10px; line-height: 1.7; }
+    .collection { min-width: 0; }
+    .list-header { padding: 21px 25px 16px; border-bottom: 1px solid var(--line); }
+    .breadcrumbs { color: var(--muted); font-size: 10px; }
+    .list-title-row { display: flex; justify-content: space-between; align-items: start; gap: 15px; margin-top: 11px; }
+    h2 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: 0; }
+    .list-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 9px; color: var(--muted); font-size: 11px; }
+    .meta-bit { display: flex; align-items: center; gap: 5px; }
+    .priority-tag { white-space: nowrap; padding: 5px 8px; border-radius: 3px; color: #9a552e; background: var(--orange-soft); font-size: 10px; font-weight: 700; }
+    .collection-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 25px; border-bottom: 1px solid var(--line); }
+    .progress-label { display: flex; align-items: center; gap: 9px; color: #57625c; font-size: 11px; white-space: nowrap; }
+    .progress-label strong { color: var(--forest); }
+    .progress-track { width: 90px; height: 5px; overflow: hidden; background: #e8ece7; border-radius: 8px; }
+    .progress-track span { display: block; height: 100%; width: 0; background: #7eaa50; transition: width .25s ease; }
+    .search { position: relative; width: min(220px, 45%); }
+    .search svg { position: absolute; top: 9px; left: 9px; color: #7e8982; }
+    .search input { width: 100%; height: 32px; padding: 0 9px 0 31px; border: 1px solid #e2e7e1; outline: none; border-radius: 4px; background: #fff; font-size: 11px; }
+    .search input:focus { border-color: #8daa7a; box-shadow: 0 0 0 2px #eaf1e5; }
+    .items { padding: 2px 25px 18px; }
+    .item-row { min-height: 67px; display: grid; grid-template-columns: 37px minmax(120px, 1fr) 60px 82px; align-items: center; gap: 11px; border-bottom: 1px solid #eff1ee; }
+    .item-visual { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 5px; background: var(--tint, #f1f4e9); font-size: 19px; }
+    .item-name { font-size: 12px; font-weight: 650; }
+    .item-detail { margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .item-price { color: #59645e; font-size: 11px; text-align: right; }
+    .item-actions { display: flex; justify-content: end; gap: 5px; }
+    .icon-btn { width: 31px; height: 31px; display: grid; place-items: center; border: 1px solid #e4e9e3; border-radius: 4px; background: white; color: #77817b; cursor: pointer; }
+    .icon-btn:hover { border-color: #b7c9ae; background: #f6f9f3; color: var(--forest); }
+    .icon-btn.selected-collected { border-color: #d4e5c2; background: var(--lime-soft); color: #557d30; }
+    .icon-btn.selected-unavailable { border-color: #f1d7c6; background: var(--orange-soft); color: var(--orange); }
+    .item-row.is-unavailable .item-name { color: #888f8b; text-decoration: line-through; }
+    .item-row.is-collected .item-visual { filter: saturate(.7); }
+    .empty-items { padding: 30px 0; text-align: center; color: var(--muted); font-size: 12px; }
+    .side-panel { padding: 20px 17px; border-left: 1px solid var(--line); background: #fcfdfb; }
+    .panel-heading { margin-bottom: 15px; font-size: 12px; font-weight: 750; }
+    .customer { display: flex; align-items: center; gap: 10px; padding: 0 0 16px; border-bottom: 1px solid var(--line); }
+    .customer-avatar { width: 35px; height: 35px; display: grid; place-items: center; color: #4b6756; background: #e6eee4; border-radius: 50%; font-family: Georgia, serif; font-size: 14px; }
+    .customer strong { display: block; font-size: 11px; }
+    .customer span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .detail-block { padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .detail-label { margin-bottom: 7px; color: #89918c; font-size: 9px; font-weight: 750; letter-spacing: .9px; text-transform: uppercase; }
+    .detail-value { color: #3d4942; font-size: 11px; line-height: 1.55; }
+    .substitution { display: flex; align-items: start; gap: 8px; color: #52634b; font-size: 10px; line-height: 1.5; }
+    .substitution input { accent-color: var(--forest-2); margin: 1px 0 0; }
+    .summary-line { display: flex; justify-content: space-between; padding: 5px 0; color: #66716b; font-size: 10px; }
+    .summary-line.total { padding-top: 9px; color: var(--ink); font-size: 12px; font-weight: 750; }
+    .pending-note { margin-top: 15px; padding: 10px; border: 1px solid #f0dfc6; border-radius: 4px; color: #8b6439; background: #fffaf1; font-size: 10px; line-height: 1.5; }
+    .primary-btn { width: 100%; min-height: 42px; margin-top: 16px; padding: 0 13px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 4px; color: #21321f; background: var(--lime); font-size: 11px; font-weight: 750; cursor: pointer; transition: background .15s ease, transform .15s ease; }
+    .primary-btn:hover:not(:disabled) { background: #c9e454; transform: translateY(-1px); }
+    .primary-btn:disabled { color: #8b9387; background: #e9ede5; cursor: not-allowed; }
+    .notice { position: fixed; right: 22px; bottom: 20px; z-index: 3; max-width: min(390px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 5px; color: white; background: var(--forest); box-shadow: var(--shadow); font-size: 12px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s ease; }
+    .notice.show { opacity: 1; transform: translateY(0); }
+    .transfer-state { display: none; margin-top: 13px; padding: 11px; border: 1px solid #dce9d2; border-radius: 4px; color: #466938; background: #f4f9ee; font-size: 10px; line-height: 1.5; }
+    .transfer-state.visible { display: block; }
+    .transfer-state strong { display: block; margin-bottom: 3px; font-size: 11px; }
+    @media (max-width: 1100px) {
+      .page { padding: 22px 18px 32px; }
+      .workspace { grid-template-columns: 260px minmax(420px, 1fr); }
+      .side-panel { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 22px; border-left: 0; border-top: 1px solid var(--line); }
+      .side-panel .panel-heading, .side-panel .customer { grid-column: 1 / -1; }
+      .side-panel .panel-heading { margin-bottom: 0; }
+      .side-panel .detail-block { border-bottom: 0; }
+      .side-panel .primary-btn, .side-panel .transfer-state { grid-column: 3; }
+      .side-panel .pending-note { grid-column: 1 / 3; }
+    }
+    @media (max-width: 700px) {
+      .topbar { height: 58px; padding: 0 14px; gap: 12px; }
+      .brand { min-width: 0; }
+      .brand small, .top-context, .worker span { display: none; }
+      .top-right { gap: 10px; }
+      .offline-button { font-size: 0; padding: 8px; }
+      .offline-button .connection-dot { width: 8px; height: 8px; }
+      .page { padding: 19px 10px 25px; }
+      .page-heading { margin: 0 4px 14px; align-items: start; }
+      h1 { font-size: 27px; }
+      .shift-note { max-width: 115px; text-align: right; line-height: 1.5; }
+      .workspace { display: flex; flex-direction: column; overflow: visible; }
+      .queue { border-right: 0; border-bottom: 1px solid var(--line); }
+      .queue-head { padding: 14px 14px 10px; }
+      .queue-list { display: flex; overflow-x: auto; gap: 6px; padding: 0 10px 12px; }
+      .order { min-width: 176px; border-color: #e9ede8; background: white; }
+      .queue-footer { display: none; }
+      .list-header { padding: 16px 15px 13px; }
+      .collection-tools { padding: 11px 15px; }
+      .items { padding: 0 12px 12px; }
+      .item-row { grid-template-columns: 34px minmax(90px, 1fr) 51px 73px; gap: 7px; min-height: 65px; }
+      .item-visual { width: 32px; height: 32px; font-size: 17px; }
+      .item-name { font-size: 11px; }
+      .item-detail { font-size: 9px; }
+      .item-price { font-size: 10px; }
+      .icon-btn { width: 31px; height: 31px; }
+      .side-panel { display: block; padding: 16px; }
+      .side-panel .detail-block { border-bottom: 1px solid var(--line); }
+      .side-panel .pending-note { margin-top: 12px; }
+      .side-panel .primary-btn { margin-top: 12px; }
+      .side-panel .transfer-state { margin-top: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">S</span><span>Spar<small>Collection desk</small></span></div>
+    <div class="top-context" aria-label="Location">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <span>Market Street · London</span>
+    </div>
+    <div class="top-right">
+      <button class="offline-button" id="connection" type="button" title="Toggle offline demo mode" aria-label="Toggle offline demo mode"><span class="connection-dot"></span><span id="connection-label">Connected</span></button>
+      <div class="worker"><div class="avatar">JM</div><span>Jordan M.</span></div>
+    </div>
+  </header>
+  <main class="page">
+    <div class="page-heading">
+      <div><div class="eyebrow">Store operations / picking</div><h1>Collection queue</h1></div>
+      <div class="shift-note">Tuesday, 14 October<br>Morning shift · 08:00–16:00</div>
+    </div>
+    <div class="workspace">
+      <aside class="queue" aria-label="Collection queue">
+        <div class="queue-head">
+          <div class="section-line"><span class="section-title">To collect</span><span class="count" id="queue-count">05</span></div>
+          <div class="queue-summary">Sorted by collection time</div>
+          <div class="queue-filters" role="group" aria-label="Filter lists">
+            <button class="filter active" data-filter="all" type="button">All lists</button>
+            <button class="filter" data-filter="priority" type="button">Priority</button>
+            <button class="filter" data-filter="mine" type="button">Assigned to me</button>
+          </div>
+        </div>
+        <div class="queue-list" id="queue-list"></div>
+        <div class="queue-footer">Lists sync automatically when connected.<br>Last queue sync <span id="last-sync">just now</span></div>
+      </aside>
+      <section class="collection" aria-label="Selected shopping list">
+        <div class="list-header">
+          <div class="breadcrumbs">Collection queue <span aria-hidden="true">/</span> <span id="crumb-id">SP-28471</span></div>
+          <div class="list-title-row">
+            <div><h2 id="list-title">The Patel family</h2><div class="list-meta"><span class="meta-bit" id="list-time"></span><span class="meta-bit" id="list-items"></span></div></div>
+            <span class="priority-tag" id="priority-tag">Priority</span>
+          </div>
+        </div>
+        <div class="collection-tools">
+          <div class="progress-label"><strong id="progress-count">0 / 0</strong><span>items resolved</span><span class="progress-track"><span id="progress-fill"></span></span></div>
+          <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="item-search" type="search" placeholder="Find an item" aria-label="Find an item"></label>
+        </div>
+        <div class="items" id="items"></div>
+      </section>
+      <aside class="side-panel" aria-label="Order details and payment handoff">
+        <div class="panel-heading">Order details</div>
+        <div class="customer"><div class="customer-avatar">P</div><div><strong id="customer-name">Priya Patel</strong><span id="customer-contact">•••• ••• 4812</span></div></div>
+        <div class="detail-block"><div class="detail-label">Delivery address</div><div class="detail-value" id="address"></div></div>
+        <div class="detail-block"><div class="detail-label">Customer note</div><div class="detail-value" id="customer-note"></div></div>
+        <div class="detail-block"><div class="detail-label">Substitutions</div><label class="substitution"><input id="substitutions" type="checkbox"><span>Allow suitable alternatives when an item is unavailable</span></label></div>
+        <div class="detail-block"><div class="detail-label">Estimated basket</div><div class="summary-line"><span>Available items</span><span id="available-total"></span></div><div class="summary-line"><span>Unavailable</span><span id="unavailable-count">0 items</span></div><div class="summary-line total"><span>To payment</span><span id="payment-total"></span></div></div>
+        <div class="pending-note" id="pending-note">Resolve every item to complete collection and send the final basket to payment.</div>
+        <button class="primary-btn" id="complete-btn" type="button" disabled><span>Complete collection</span><span aria-hidden="true">→</span></button>
+        <div class="transfer-state" id="transfer-state" role="status"></div>
+      </aside>
+    </div>
+  </main>
+  <div class="notice" id="notice" role="status" aria-live="polite"></div>
+  <script>
+    const lists = [
+      { id: "SP-28471", name: "The Patel family", customer: "Priya Patel", initials: "P", phone: "•••• ••• 4812", time: "08:30–09:00", count: 12, priority: true, mine: true, address: "18 Market Street<br>London, W1U 4DJ", note: "Please choose ripe avocados. Leave at the side entrance if we're out.", allowSubstitutions: false, items: [
+        ["Ripe avocados", "Loose · 2 pcs", 1.60, "🥑", "#edf4df"], ["Whole milk", "2L · 1 bottle", 1.65, "🥛", "#edf3f3"], ["Sourdough loaf", "Bakery · 1 loaf", 3.20, "🍞", "#fbefdd"], ["Free-range eggs", "Large · 6 pack", 2.45, "🥚", "#f8f3e8"], ["Baby spinach", "Washed · 120g", 1.50, "🥬", "#eaf3e9"], ["Cherry tomatoes", "British · 250g", 2.10, "🍅", "#faece8"], ["Greek yoghurt", "Natural · 500g", 2.75, "🥣", "#f2eddf"], ["Bananas", "Fairtrade · 5 pcs", 1.35, "🍌", "#faf3d9"], ["Penne pasta", "Durum wheat · 500g", 1.25, "🍝", "#f4efde"], ["Extra virgin olive oil", "Cold pressed · 500ml", 7.50, "🫒", "#eef0df"], ["Lemons", "Unwaxed · 3 pcs", 1.20, "🍋", "#f8f4d9"], ["Dark chocolate", "70% cocoa · 100g", 2.00, "🍫", "#f1e9e4"]
+      ]},
+      { id: "SP-28469", name: "Olivia Chen", customer: "Olivia Chen", initials: "O", phone: "•••• ••• 2039", time: "08:45–09:15", count: 8, priority: false, mine: true, address: "42 Highbury Place<br>London, N5 1QJ", note: "No plastic bags, please.", allowSubstitutions: true, items: [["Oat drink", "Barista · 1L", 2.25, "🥛", "#edf3f3"], ["Blueberries", "125g punnet", 2.75, "🫐", "#eeeafa"], ["Rolled oats", "Organic · 1kg", 2.10, "🌾", "#f5efdf"], ["Avocados", "Pack of 2", 1.80, "🥑", "#edf4df"], ["Limes", "Pack of 4", 1.50, "🍋", "#f8f4d9"], ["Tofu", "Firm · 280g", 2.00, "🧈", "#f4efdf"], ["Coriander", "Fresh bunch", .85, "🌿", "#eaf3e9"], ["Brown rice", "Wholegrain · 1kg", 2.45, "🍚", "#f3eddf"]]},
+      { id: "SP-28468", name: "Hassan & Co.", customer: "Amir Hassan", initials: "A", phone: "•••• ••• 7740", time: "09:00–09:30", count: 15, priority: true, mine: false, address: "7 Camden Passage<br>London, N1 8EA", note: "Please check dates on chilled items.", allowSubstitutions: true, items: [["Chicken breast", "British · 500g", 5.50, "🍗", "#f6eae4"], ["Red peppers", "Pack of 3", 1.75, "🫑", "#f1eddd"], ["Couscous", "500g", 1.80, "🍚", "#f3eddf"], ["Natural yoghurt", "1kg", 3.20, "🥣", "#f2eddf"], ["Flatbread", "Pack of 4", 1.60, "🫓", "#f7eddf"]]},
+      { id: "SP-28465", name: "Sofia Williams", customer: "Sofia Williams", initials: "S", phone: "•••• ••• 6691", time: "09:15–09:45", count: 6, priority: false, mine: false, address: "3 Arcola Street<br>London, E8 2DJ", note: "Ring the bell twice.", allowSubstitutions: false, items: [["Strawberries", "British · 400g", 3.50, "🍓", "#fae9e8"], ["Double cream", "300ml", 2.10, "🥛", "#edf3f3"], ["Vanilla extract", "50ml", 4.25, "🍯", "#f5eddf"], ["Caster sugar", "1kg", 1.45, "🍚", "#f5f3eb"]]},
+      { id: "SP-28462", name: "Marco Rossi", customer: "Marco Rossi", initials: "M", phone: "•••• ••• 1908", time: "09:30–10:00", count: 10, priority: false, mine: false, address: "29 Kingsland Road<br>London, E2 8AA", note: "Deliver to reception.", allowSubstitutions: true, items: [["Espresso beans", "Whole bean · 250g", 5.95, "☕", "#f3ece5"], ["Oat biscuits", "200g", 2.00, "🍪", "#f5efdf"], ["Pecorino", "Wedge · 150g", 3.75, "🧀", "#f7f0dd"], ["Rocket leaves", "70g", 1.30, "🥬", "#eaf3e9"]]}
+    ];
+    const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+    const state = JSON.parse(localStorage.getItem("spar-collection-state") || "{}");
+    let selectedId = state.selectedId || lists[0].id;
+    let activeFilter = "all";
+    let noticeTimer;
+    const queue = document.getElementById("queue-list");
+    const itemsElement = document.getElementById("items");
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    const getCurrent = () => lists.find(list => list.id === selectedId) || lists[0];
+    const getStatus = (list, index) => state[list.id]?.items?.[index] || "pending";
+    const isTransferred = list => Boolean(state[list.id]?.transferred);
+    const resolvedCount = list => list.items.filter((_, index) => getStatus(list, index) !== "pending").length;
+    function persist() {
+      state.selectedId = selectedId;
+      localStorage.setItem("spar-collection-state", JSON.stringify(state));
+    }
+    function notify(message) {
+      const notice = document.getElementById("notice");
+      notice.textContent = message;
+      notice.classList.add("show");
+      clearTimeout(noticeTimer);
+      noticeTimer = setTimeout(() => notice.classList.remove("show"), 2600);
+    }
+    function renderQueue() {
+      const visible = lists.filter(list => activeFilter === "all" || (activeFilter === "priority" && list.priority) || (activeFilter === "mine" && list.mine));
+      queue.innerHTML = visible.map(list => {
+        const resolved = resolvedCount(list);
+        const status = isTransferred(list) ? "Sent to payment" : `${resolved} of ${list.items.length} items`;
+        return `<button class="order ${list.id === selectedId ? "selected" : ""}" data-id="${list.id}" type="button" aria-pressed="${list.id === selectedId}"><span class="order-top"><span class="order-name">${escapeHtml(list.name)}</span>${list.priority ? '<span class="priority">Priority</span>' : ""}</span><span class="order-bottom"><span class="order-id">${list.id}</span><span>${list.time.split("–")[0]}</span></span><span class="order-bottom"><span>${status}</span><span>${list.items.length} items</span></span><span class="order-progress"><span style="width:${list.items.length ? resolved / list.items.length * 100 : 0}%"></span></span></button>`;
+      }).join("");
+      document.getElementById("queue-count").textContent = String(lists.filter(list => !isTransferred(list)).length).padStart(2, "0");
+      queue.querySelectorAll(".order").forEach(button => button.addEventListener("click", () => {
+        selectedId = button.dataset.id;
+        document.getElementById("item-search").value = "";
+        persist();
+        render();
+      }));
+    }
+    function renderItems() {
+      const list = getCurrent();
+      const query = document.getElementById("item-search").value.trim().toLocaleLowerCase();
+      const filtered = list.items.map((item, index) => ({ item, index })).filter(({ item }) => item[0].toLocaleLowerCase().includes(query) || item[1].toLocaleLowerCase().includes(query));
+      if (!filtered.length) {
+        itemsElement.innerHTML = '<div class="empty-items">No items match your search.</div>';
+        return;
+      }
+      itemsElement.innerHTML = filtered.map(({ item, index }) => {
+        const status = getStatus(list, index);
+        return `<div class="item-row ${status === "collected" ? "is-collected" : ""} ${status === "unavailable" ? "is-unavailable" : ""}" data-index="${index}"><div class="item-visual" style="--tint:${item[4]}" aria-hidden="true">${item[3]}</div><div><div class="item-name">${escapeHtml(item[0])}</div><div class="item-detail">${escapeHtml(item[1])}${status === "unavailable" ? " · unavailable" : ""}</div></div><div class="item-price">${money.format(item[2])}</div><div class="item-actions"><button class="icon-btn ${status === "collected" ? "selected-collected" : ""}" data-status="collected" type="button" title="${status === "collected" ? "Mark as not collected" : "Mark as collected"}" aria-label="${status === "collected" ? "Mark as not collected" : `Mark ${escapeHtml(item[0])} as collected`}" aria-pressed="${status === "collected"}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button><button class="icon-btn ${status === "unavailable" ? "selected-unavailable" : ""}" data-status="unavailable" type="button" title="${status === "unavailable" ? "Mark as available" : "Mark as unavailable"}" aria-label="${status === "unavailable" ? "Mark as available" : `Mark ${escapeHtml(item[0])} as unavailable`}" aria-pressed="${status === "unavailable"}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg></button></div></div>`;
+      }).join("");
+      itemsElement.querySelectorAll(".icon-btn").forEach(button => button.addEventListener("click", () => {
+        const itemIndex = Number(button.closest(".item-row").dataset.index);
+        const status = button.dataset.status;
+        state[list.id] ||= { items: {} };
+        state[list.id].items ||= {};
+        state[list.id].items[itemIndex] = getStatus(list, itemIndex) === status ? "pending" : status;
+        delete state[list.id].transferred;
+        persist();
+        render();
+        if (!navigator.onLine) notify("Saved on this tablet. Changes will sync when connected.");
+      }));
+    }
+    function renderDetails() {
+      const list = getCurrent();
+      const resolved = resolvedCount(list);
+      const unavailable = list.items.filter((_, index) => getStatus(list, index) === "unavailable").length;
+      const total = list.items.reduce((sum, item, index) => getStatus(list, index) === "unavailable" ? sum : sum + item[2], 0);
+      const transferred = isTransferred(list);
+      document.getElementById("crumb-id").textContent = list.id;
+      document.getElementById("list-title").textContent = list.name;
+      document.getElementById("list-time").innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> ${list.time} collection`;
+      document.getElementById("list-items").innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg> ${list.items.length} items`;
+      document.getElementById("priority-tag").hidden = !list.priority;
+      document.querySelector(".customer-avatar").textContent = list.initials;
+      document.getElementById("customer-name").textContent = list.customer;
+      document.getElementById("customer-contact").textContent = list.phone;
+      document.getElementById("address").innerHTML = list.address;
+      document.getElementById("customer-note").textContent = list.note;
+      document.getElementById("substitutions").checked = Boolean(list.allowSubstitutions);
+      document.getElementById("progress-count").textContent = `${resolved} / ${list.items.length}`;
+      document.getElementById("progress-fill").style.width = `${resolved / list.items.length * 100}%`;
+      document.getElementById("available-total").textContent = money.format(total);
+      document.getElementById("payment-total").textContent = money.format(total);
+      document.getElementById("unavailable-count").textContent = `${unavailable} ${unavailable === 1 ? "item" : "items"}`;
+      const complete = document.getElementById("complete-btn");
+      complete.disabled = resolved !== list.items.length || transferred;
+      complete.innerHTML = transferred ? "Collection complete" : '<span>Complete collection</span><span aria-hidden="true">→</span>';
+      document.getElementById("pending-note").hidden = transferred;
+      const transfer = document.getElementById("transfer-state");
+      transfer.classList.toggle("visible", transferred);
+      transfer.innerHTML = transferred ? `<strong>✓ Sent to payment engine</strong>${navigator.onLine ? "Basket confirmed and queued for checkout." : "Saved securely on this tablet. Will transfer when connected."}` : "";
+    }
+    function render() { renderQueue(); renderItems(); renderDetails(); }
+    document.querySelectorAll(".filter").forEach(button => button.addEventListener("click", () => {
+      activeFilter = button.dataset.filter;
+      document.querySelectorAll(".filter").forEach(filter => filter.classList.toggle("active", filter === button));
+      renderQueue();
+    }));
+    document.getElementById("item-search").addEventListener("input", renderItems);
+    document.getElementById("substitutions").addEventListener("change", event => {
+      getCurrent().allowSubstitutions = event.target.checked;
+      persist();
+      notify("Substitution preference saved.");
+    });
+    document.getElementById("complete-btn").addEventListener("click", () => {
+      const list = getCurrent();
+      if (resolvedCount(list) !== list.items.length) return;
+      state[list.id].transferred = true;
+      state[list.id].transferId = `PAY-${Date.now().toString().slice(-8)}`;
+      persist();
+      render();
+      notify(`Basket ${list.id} sent to payment engine.`);
+    });
+    const connectionButton = document.getElementById("connection");
+    function updateConnection(offline = !navigator.onLine) {
+      connectionButton.classList.toggle("is-offline", offline);
+      document.getElementById("connection-label").textContent = offline ? "Offline · saved locally" : "Connected · synced";
+      renderDetails();
+    }
+    connectionButton.addEventListener("click", () => {
+      const demoOffline = !connectionButton.classList.contains("is-offline");
+      connectionButton.dataset.demoOffline = String(demoOffline);
+      updateConnection(demoOffline);
+      notify(demoOffline ? "Offline mode on. Changes are saved to this tablet." : "Connected. Local changes are ready to sync.");
+    });
+    window.addEventListener("online", () => {
+      if (connectionButton.dataset.demoOffline !== "true") { updateConnection(false); notify("Connection restored. Local changes are ready to sync."); }
+    });
+    window.addEventListener("offline", () => updateConnection(true));
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+    render();
+    updateConnection(!navigator.onLine);
+  </script>
+</body>
+</html>
