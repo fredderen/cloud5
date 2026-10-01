@@ -1,0 +1,13 @@
+{
+  "name": "spar-mock-payment-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mock payment processor triggered by Azure Service Bus",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.7.2"
+  }
+}

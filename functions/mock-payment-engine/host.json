@@ -1,0 +1,21 @@
+{
+  "version": "2.0",
+  "functionTimeout": "00:05:00",
+  "extensions": {
+    "serviceBus": {
+      "maxConcurrentCalls": 8,
+      "maxAutoLockRenewalDuration": "00:05:00",
+      "clientRetryOptions": {
+        "mode": "exponential",
+        "tryTimeout": "00:00:30",
+        "delay": "00:00:01",
+        "maxDelay": "00:00:30",
+        "maxRetries": 3
+      }
+    }
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
+  }
+}

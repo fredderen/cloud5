@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "SERVICE_BUS_CONNECTION": "<local Service Bus namespace connection string>",
+    "PAYMENT_REQUEST_QUEUE": "payment-requests",
+    "PAYMENT_RESULT_QUEUE": "payment-results"
+  }
+}

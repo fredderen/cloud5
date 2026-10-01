@@ -1,0 +1,35 @@
+name: Deploy mock payment engine
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "functions/mock-payment-engine/**"
+      - ".github/workflows/deploy-mock-payment-engine.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install function dependencies
+        working-directory: functions/mock-payment-engine
+        run: npm install --omit=dev
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: mock-payment-engine
+          package: functions/mock-payment-engine
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
